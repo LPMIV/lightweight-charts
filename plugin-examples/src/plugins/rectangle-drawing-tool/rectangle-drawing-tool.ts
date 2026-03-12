@@ -238,6 +238,19 @@ interface Point {
 	price: number;
 }
 
+export interface RectangleDrawingRecord {
+	id: string;
+	p1: Point;
+	p2: Point;
+	options: Partial<RectangleDrawingToolOptions>;
+}
+
+export interface RectangleDrawingToolConfiguration
+	extends Partial<RectangleDrawingToolOptions> {
+	initialRectangles?: RectangleDrawingRecord[];
+	onChange?: (rectangles: RectangleDrawingRecord[]) => void;
+}
+
 export interface RectangleDrawingToolOptions {
 	fillColor: string;
 	previewFillColor: string;
@@ -265,6 +278,7 @@ const defaultOptions: RectangleDrawingToolOptions = {
 };
 
 class Rectangle extends PluginBase {
+	_id: string;
 	_options: RectangleDrawingToolOptions;
 	_p1: Point;
 	_p2: Point;
@@ -275,11 +289,13 @@ class Rectangle extends PluginBase {
 	_timeAxisPaneViews: RectangleTimeAxisPaneView[];
 
 	constructor(
+		id: string,
 		p1: Point,
 		p2: Point,
 		options: Partial<RectangleDrawingToolOptions> = {}
 	) {
 		super();
+		this._id = id;
 		this._p1 = p1;
 		this._p2 = p2;
 		this._options = {
@@ -331,15 +347,31 @@ class Rectangle extends PluginBase {
 		this._options = { ...this._options, ...options };
 		this.requestUpdate();
 	}
+
+	toRecord(): RectangleDrawingRecord {
+		return {
+			id: this._id,
+			p1: this._p1,
+			p2: this._p2,
+			options: {
+				fillColor: this._options.fillColor,
+				previewFillColor: this._options.previewFillColor,
+				labelColor: this._options.labelColor,
+				labelTextColor: this._options.labelTextColor,
+				showLabels: this._options.showLabels,
+			},
+		};
+	}
 }
 
 class PreviewRectangle extends Rectangle {
 	constructor(
+		id: string,
 		p1: Point,
 		p2: Point,
 		options: Partial<RectangleDrawingToolOptions> = {}
 	) {
-		super(p1, p2, options);
+		super(id, p1, p2, options);
 		this._options.fillColor = this._options.previewFillColor;
 	}
 
@@ -362,19 +394,25 @@ export class RectangleDrawingTool {
 	private _points: Point[] = [];
 	private _drawing: boolean = false;
 	private _toolbarButton: HTMLDivElement | undefined;
+	private _onChange?: (rectangles: RectangleDrawingRecord[]) => void;
+	private _idCounter = 0;
 
 	constructor(
 		chart: IChartApi,
 		series: ISeriesApi<SeriesType>,
 		drawingsToolbarContainer: HTMLDivElement,
-		options: Partial<RectangleDrawingToolOptions>
+		options: RectangleDrawingToolConfiguration = {}
 	) {
 		this._chart = chart;
 		this._series = series;
 		this._drawingsToolbarContainer = drawingsToolbarContainer;
 		this._addToolbarButton();
 		this._defaultOptions = options;
+		this._onChange = options.onChange;
 		this._rectangles = [];
+		if (options.initialRectangles?.length) {
+			this.loadRectangles(options.initialRectangles);
+		}
 		this._chart.subscribeClick(this._clickHandler);
 		this._chart.subscribeCrosshairMove(this._moveHandler);
 	}
@@ -418,6 +456,35 @@ export class RectangleDrawingTool {
 		return this._drawing;
 	}
 
+	getRectangles(): RectangleDrawingRecord[] {
+		return this._rectangles.map(rectangle => rectangle.toRecord());
+	}
+
+	loadRectangles(records: RectangleDrawingRecord[]) {
+		this._rectangles.forEach(rectangle => {
+			this._removeRectangle(rectangle);
+		});
+		this._rectangles = [];
+		records.forEach(record => {
+			const rectangle = new Rectangle(record.id, record.p1, record.p2, {
+				...this._defaultOptions,
+				...record.options,
+			});
+			this._rectangles.push(rectangle);
+			ensureDefined(this._series).attachPrimitive(rectangle);
+		});
+		this._idCounter = this._rectangles.length;
+		this._emitChange();
+	}
+
+	removeRectangle(id: string) {
+		const rectangle = this._rectangles.find(item => item._id === id);
+		if (!rectangle) return;
+		this._removeRectangle(rectangle);
+		this._rectangles = this._rectangles.filter(item => item._id !== id);
+		this._emitChange();
+	}
+
 	private _onClick(param: MouseEventParams) {
 		if (!this._drawing || !param.point || !param.time || !this._series) return;
 		const price = this._series.coordinateToPrice(param.point.y);
@@ -457,9 +524,12 @@ export class RectangleDrawingTool {
 	}
 
 	private _addNewRectangle(p1: Point, p2: Point) {
-		const rectangle = new Rectangle(p1, p2, { ...this._defaultOptions });
+		const rectangle = new Rectangle(this._nextId(), p1, p2, {
+			...this._defaultOptions,
+		});
 		this._rectangles.push(rectangle);
 		ensureDefined(this._series).attachPrimitive(rectangle);
+		this._emitChange();
 	}
 
 	private _removeRectangle(rectangle: Rectangle) {
@@ -467,7 +537,7 @@ export class RectangleDrawingTool {
 	}
 
 	private _addPreviewRectangle(p: Point) {
-		this._previewRectangle = new PreviewRectangle(p, p, {
+		this._previewRectangle = new PreviewRectangle(this._nextId(), p, p, {
 			...this._defaultOptions,
 		});
 		ensureDefined(this._series).attachPrimitive(this._previewRectangle);
@@ -510,5 +580,14 @@ export class RectangleDrawingTool {
 			this._defaultOptions.labelColor = newColor;
 		});
 		this._drawingsToolbarContainer.appendChild(colorPicker);
+	}
+
+	private _nextId(): string {
+		this._idCounter += 1;
+		return `rectangle-${this._idCounter}`;
+	}
+
+	private _emitChange() {
+		this._onChange?.(this.getRectangles());
 	}
 }

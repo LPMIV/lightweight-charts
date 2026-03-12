@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Octane Terminal - SuperCharts Shell</title>
+		<link href="../examples-base.css" rel="stylesheet" />
+		<link href="./octane-supercharts.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="octane-shell" id="app">
+			<header class="octane-header">
+				<div class="octane-brand">
+					<div class="octane-logo">OT</div>
+					<div>
+						<div class="octane-kicker">Octane Terminal</div>
+						<h1>SuperCharts Shell</h1>
+					</div>
+				</div>
+				<div class="octane-header-grid">
+					<div class="header-group" id="symbol-group"></div>
+					<div class="header-group" id="interval-group"></div>
+					<div class="header-group" id="style-group"></div>
+					<div class="header-group" id="study-group"></div>
+					<div class="header-group" id="action-group"></div>
+					<div class="header-group" id="layout-group"></div>
+					<div class="header-group" id="utility-group"></div>
+					<div class="header-group header-group-accent" id="publish-group"></div>
+				</div>
+			</header>
+
+			<main class="octane-workspace">
+				<aside class="left-rail">
+					<div class="rail-title">Tools</div>
+					<div id="left-rail-groups"></div>
+				</aside>
+
+				<section class="chart-column">
+					<div class="chart-toolbar">
+						<div class="chart-summary">
+							<div class="chart-symbol-line">
+								<span class="chart-symbol" id="chart-symbol">USDCAD</span>
+								<span class="chart-exchange">OANDA</span>
+								<span class="chart-interval" id="chart-interval">3h</span>
+							</div>
+							<div class="chart-stats" id="chart-stats"></div>
+						</div>
+						<div class="chart-actions">
+							<div class="drawing-toolbar" id="drawing-toolbar"></div>
+						</div>
+					</div>
+					<div class="chart-stage">
+						<div id="chart"></div>
+					</div>
+				</section>
+
+				<aside class="right-rail">
+					<div class="rail-title">Workspace</div>
+					<div id="right-rail-items"></div>
+					<section class="inspector-card">
+						<div class="inspector-header">
+							<h2>Rectangles</h2>
+							<button id="clear-rectangles" class="ghost-button" type="button">Clear</button>
+						</div>
+						<p class="inspector-copy">
+							Local stub persistence only. This is the seam that will later point to
+							<code>core.database</code>.
+						</p>
+						<div id="rectangle-list" class="rectangle-list"></div>
+					</section>
+					<section class="inspector-card">
+						<h2>Settings Schema</h2>
+						<div id="settings-schema" class="settings-schema"></div>
+					</section>
+				</aside>
+			</main>
+		</div>
+
+		<script type="module" src="./octane-supercharts.ts"></script>
+	</body>
+</html>
