@@ -390,3 +390,13 @@ body {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 }
+
+.market-data-controls { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; align-items: end; }
+.market-data-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.market-data-controls select, .market-data-controls button { padding: 6px 8px; border: 1px solid #b6a18b; border-radius: 6px; background: #fffaf4; color: #3f3429; }
+.market-data-controls button { cursor: pointer; }
+.market-data-controls button:disabled { cursor: default; opacity: .5; }
+.data-status, .data-detail { padding: 4px 16px; font-size: 12px; }
+.data-status[data-state="live"] { color: #176b3e; }
+.data-status[data-state="error"], .data-status[data-state="reconnecting"] { color: #a22e20; }
+.data-detail { color: #6f6052; padding-bottom: 10px; }

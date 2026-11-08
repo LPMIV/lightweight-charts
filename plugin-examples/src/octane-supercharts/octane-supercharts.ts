@@ -1,3 +1,4 @@
+import { attachOandaControls } from './oanda-controls';
 import {
 	CandlestickSeries,
 	ColorType,
@@ -188,6 +189,7 @@ const sampleData = usdcad3h as CandleRecord[];
 series.setData(sampleData);
 chart.timeScale().fitContent();
 renderStats(sampleData);
+attachOandaControls(chart, series, sampleData, renderStats);
 
 const rectangleTool = new RectangleDrawingTool(
 	chart as IChartApi,
@@ -276,9 +278,10 @@ function populateSettingsSchema() {
 
 function renderStats(data: CandleRecord[]) {
 	const latest = data[data.length - 1];
-	const previous = data[data.length - 2];
+	if (!latest) { chartStatsElement.textContent = 'No data'; return; }
+	const previous = data[data.length - 2] ?? latest;
 	const delta = latest.close - previous.close;
-	const deltaPercent = (delta / previous.close) * 100;
+	const deltaPercent = previous.close === 0 ? 0 : (delta / previous.close) * 100;
 	chartStatsElement.innerHTML = [
 		`O ${latest.open.toFixed(4)}`,
 		`H ${latest.high.toFixed(4)}`,
