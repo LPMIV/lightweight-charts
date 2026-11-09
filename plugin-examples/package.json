@@ -6,7 +6,8 @@
         "compile": "tsc && node compile.mjs",
         "dev": "vite --config src/vite.config.js",
         "build:examples:site": "vite build --config src/vite.config.js && node build-website.mjs",
-        "test:oanda": "node --import tsx --test tests/oanda-feed.test.ts"
+        "test:oanda": "node --import tsx --test tests/oanda-feed.test.ts",
+        "test:replay": "node --import tsx --test tests/offline-replay.test.ts"
     },
     "devDependencies": {
         "typescript": "5.5.4",
