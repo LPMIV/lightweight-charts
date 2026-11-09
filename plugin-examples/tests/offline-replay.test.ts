@@ -66,3 +66,31 @@ test('line adapter applies Python values, keeps whitespace, toggles visibility a
 	lines.visible(false, true); assert.deepEqual(calls.map(c => c.options), [{ visible: false }, { visible: true }, { visible: true }]);
 	lines.clear(); assert.deepEqual(calls.map(c => c.data), [[], [], []]);
 });
+function recordedFixture() {
+	const p = fixture();
+	return { ...p, adapter: 'oanda-juno-recorded-chart/1', synthetic: false, as_of: null,
+		evidence: 'recorded-snapshot', observation_timing: 'unobserved', environment: 'practice',
+		initial_partial_period: true, warmup: 'available-capture-only', capture_sha256: '0'.repeat(64),
+		capture_started_at: '2026-11-07T00:00:01.123456789Z', anchor_policy: 'capture-window',
+		stream: { ...p.stream, instrument: 'EUR_USD', provider: 'oanda', price_basis: 'mid', volume_semantics: 'tick_count' },
+		availability: p.availability.map(a => ({ ...a, available_at: null, revision: null, volume: 2 })) };
+}
+test('recorded adapter retains real origin and explicitly unobserved timing', () => {
+	const p = parseReplaySnapshot(recordedFixture());
+	assert.equal(p.evidence, 'recorded-snapshot'); assert.equal(p.asOf, null);
+	assert.equal(p.priceBasis, 'mid'); assert.equal(p.anchorPolicy, 'capture-window');
+});
+test('recorded adapter rejects invented receipt times, revisions and synthetic/live labels', () => {
+	const p = recordedFixture();
+	for (const extra of [{ synthetic: true }, { as_of: fixture().as_of }, { environment: 'live' },
+		{ observation_timing: 'observed' }, { anchor_policy: 'daily-New-York' }]) assert.throws(() => parseReplaySnapshot({ ...p, ...extra }));
+	assert.throws(() => parseReplaySnapshot({ ...p, availability: [{ ...p.availability[0], available_at: fixture().as_of }] }));
+	assert.throws(() => parseReplaySnapshot({ ...p, availability: [{ ...p.availability[0], revision: 0 }] }));
+	assert.throws(() => parseReplaySnapshot({ ...p, stream: { ...p.stream, provider: 'synthetic' } }));
+});
+test('recorded adapter enforces tick volume and M1 boundary contract', () => {
+	const p = recordedFixture();
+	assert.throws(() => parseReplaySnapshot({ ...p, availability: [{ ...p.availability[0], volume: -1 }] }));
+	assert.throws(() => parseReplaySnapshot({ ...p, stream: { ...p.stream, timeframe: 'H7' } }));
+	assert.throws(() => parseReplaySnapshot({ ...p, series: { ...p.series, candles: [{ ...p.series.candles[0], time: p.series.candles[0].time + 1 }] } }));
+});

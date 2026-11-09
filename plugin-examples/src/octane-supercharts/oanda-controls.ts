@@ -54,11 +54,11 @@ export function attachOandaControls(chart: IChartApi, series: ISeriesApi<'Candle
 		},
 		onStatus: (state, message) => { status.dataset.state = state; status.textContent = `${state.toUpperCase()}: ${message}`; },
 	});
-	const labels = (symbol: string, interval: string) => {
+	const labels = (symbol: string, interval: string, provenance?: string) => {
 		document.getElementById('chart-symbol')!.textContent = symbol;
 		document.getElementById('chart-interval')!.textContent = interval;
 		const exchange = document.querySelector('.chart-exchange');
-		if (exchange) exchange.textContent = select('source').value === 'replay' ? 'SYNTHETIC' : select('source').value === 'demo' ? 'DEMO' : 'OANDA';
+		if (exchange) exchange.textContent = provenance ?? (select('source').value === 'replay' ? 'REPLAY' : select('source').value === 'demo' ? 'DEMO' : 'OANDA');
 		const symbolChip = document.querySelector('#symbol-group .header-chip');
 		if (symbolChip) symbolChip.textContent = symbol;
 		const intervalChip = document.querySelector('#interval-group .header-chip');
@@ -84,13 +84,15 @@ export function attachOandaControls(chart: IChartApi, series: ISeriesApi<'Candle
 			if (current !== generation || select('source').value !== 'replay') return;
 			const snapshot = parseReplaySnapshot(JSON.parse(text) as unknown);
 			series.setData(snapshot.series.candles); replayLines.apply(snapshot); displayed = [];
-			chart.timeScale().fitContent(); stats(snapshot.series.candles); labels(snapshot.instrument, snapshot.timeframe);
+			const recorded = snapshot.evidence === 'recorded-snapshot';
+			chart.timeScale().fitContent(); stats(snapshot.series.candles); labels(snapshot.instrument, snapshot.timeframe, recorded ? 'RECORDED OANDA' : 'SYNTHETIC');
 			status.dataset.state = 'replay';
-			status.textContent = 'REPLAY: Synthetic Python snapshot. No live data or TradingView parity.';
-			detail.textContent = `${snapshot.series.candles.length} candles · ${snapshot.provisional} provisional · Source ${snapshot.source.toUpperCase()} · As of ${snapshot.asOf} · ${snapshot.policy}`;
+			status.textContent = recorded ? 'REPLAY: Recorded OANDA practice snapshot. No live connection; receipt times unobserved.' : 'REPLAY: Synthetic Python snapshot. No live data or TradingView parity.';
+			const timing = recorded ? `Receipt time unknown · ${snapshot.priceBasis} · ${snapshot.anchorPolicy} (partial history)` : `As of ${snapshot.asOf}`;
+			detail.textContent = `${snapshot.series.candles.length} candles · ${snapshot.provisional} provisional · Source ${snapshot.source.toUpperCase()} · ${timing} · ${snapshot.policy}`;
 		} catch {
 			if (current !== generation) return;
-			status.dataset.state = 'error'; status.textContent = 'REPLAY: Could not load snapshot. Use the synthetic Python chart export (maximum 5 MiB).';
+			status.dataset.state = 'error'; status.textContent = 'REPLAY: Could not load snapshot. Use a supported Python chart export (maximum 5 MiB).';
 		}
 	};
 	form.addEventListener('submit', event => {

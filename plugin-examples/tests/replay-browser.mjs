@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import puppeteer from 'puppeteer';
@@ -57,6 +57,19 @@ try {
 		await file.uploadFile(join(temp, 'final.json'));
 		await page.waitForFunction(() => document.querySelector('.data-detail').textContent.includes('2 candles'));
 		if (process.env.OCTANE_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.OCTANE_SCREENSHOT_DIR, `octane-replay-${width}.png`), fullPage: true });
+	}
+	if (process.env.OCTANE_RECORDED_SNAPSHOT) {
+		const path = resolve(process.env.OCTANE_RECORDED_SNAPSHOT);
+		const recorded = JSON.parse(await readFile(path, 'utf8'));
+		assert.equal(recorded.adapter, 'oanda-juno-recorded-chart/1'); assert.equal(recorded.synthetic, false);
+		await page.select('select[name="source"]', 'demo'); await page.select('select[name="source"]', 'replay');
+		await (await page.$('input[name="replay-file"]')).uploadFile(path);
+		await page.waitForFunction(count => document.querySelector('.data-detail').textContent.includes(`${count} candles`), {}, recorded.series.candles.length);
+		assert.equal(await page.$eval('.chart-exchange', e => e.textContent), 'RECORDED OANDA');
+		assert.match(await page.$eval('.data-status', e => e.textContent), /Recorded OANDA practice snapshot.*No live connection/);
+		assert.match(await page.$eval('.data-detail', e => e.textContent), /Receipt time unknown.*partial history/);
+		assert.match(await page.$eval('#chart-stats', e => e.textContent), new RegExp(recorded.series.candles.at(-1).close.toFixed(4).replace('.', '\\.')));
+		console.log('PASS: local recorded snapshot imported with explicit real-origin and unknown-timing labels');
 	}
 	assert.deepEqual(apiRequests, []); assert.deepEqual(errors, []);
 	console.log('PASS: synthetic Python HLC3 export, preview/final replacement, indicator toggles, invalid/oversized rejection, demo recovery, desktop/mobile Chromium viewports; no API requests or browser errors');
