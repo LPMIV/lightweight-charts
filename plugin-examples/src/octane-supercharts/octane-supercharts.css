@@ -406,6 +406,13 @@ body {
 .replay-indicators label { display: inline-flex; gap: 4px; align-items: center; padding: 6px; }
 .data-status[data-state="replay"] { color: #66518c; }
 @media (max-width: 600px) {
+	.octane-header-grid { flex-wrap: nowrap; overflow-x: auto; min-width: 0; padding-bottom: 4px; }
+	.header-group { flex: 0 0 auto; flex-wrap: nowrap; }
+	.left-rail { display: block; padding: 10px; min-width: 0; }
+	#left-rail-groups { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+	.left-rail-group { flex: 0 0 auto; flex-direction: row; margin-bottom: 0; }
+	.left-rail-label { max-width: 52px; }
+	.chart-column { order: -1; }
 	.market-data-controls label { max-width: 100%; }
 	.market-data-controls input[type="file"] { width: 240px; }
 	.data-status, .data-detail { overflow-wrap: anywhere; }

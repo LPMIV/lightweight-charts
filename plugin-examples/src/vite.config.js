@@ -1,6 +1,7 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import { globby } from 'globby';
+import { practiceProxy } from './agenticos-proxy.mjs';
 
 const paths = (await globby(['./src/**/*.html'])).map(path =>
 	path.replace('./src/', '')
@@ -19,7 +20,7 @@ export default defineConfig({
 	base: './',
 	server: {
 		host: '127.0.0.1', port: 5173, strictPort: true,
-		proxy: { '/api/oanda': { target: 'http://127.0.0.1:8765', changeOrigin: true } },
+		proxy: { '/api/oanda': practiceProxy() },
 	},
 	build: {
 		rollupOptions: {
